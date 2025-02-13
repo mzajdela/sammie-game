@@ -1,8 +1,7 @@
 body {
-    text-align: center;
-    background-color: #f8f8f8;
-    margin: 0;
-    overflow: hidden;
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* Edge */
+    user-select: none; /* Modern browsers */
 }
 canvas {
     background-color: #fff;
@@ -28,10 +27,11 @@ canvas {
     border: none;
     cursor: pointer;
     border-radius: 5px;
-    user-select: none; /* Prevent text selection */
-    -webkit-user-select: none; /* For Safari */
-    -ms-user-select: none; /* For Edge */
-    touch-action: manipulation; /* Prevent long-press selection */
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    touch-action: manipulation;
+    -webkit-touch-callout: none; /* Disable iOS callout menu */
 }
 .controls button:active {
     background: #0056b3;
