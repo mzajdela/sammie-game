@@ -28,6 +28,10 @@ canvas {
     border: none;
     cursor: pointer;
     border-radius: 5px;
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* For Safari */
+    -ms-user-select: none; /* For Edge */
+    touch-action: manipulation; /* Prevent long-press selection */
 }
 .controls button:active {
     background: #0056b3;
