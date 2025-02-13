@@ -10,15 +10,19 @@ catImg.src = "cat.jpg";  // Ensure you have this file
 const treatImg = new Image();
 treatImg.src = "treat.jpg";  // Ensure you have this file
 const hatImg = new Image();
-hatImg.src = "hat.jpg";  // Add your hat image here
+hatImg.src = "hat.png";  // Add your hat image here
 const bowImg = new Image();
-bowImg.src = "bow.jpg";  // Add your bow image here
+bowImg.src = "bow.png";  // Add your bow image here
+
+// Get player name
+let playerName = prompt("Enter your name:");
+if (!playerName) playerName = "Guest";
 
 // Game variables
 const cat = { x: canvas.width / 2 - 50, y: canvas.height - 80, width: 100, height: 80, speed: 10 };
 const treats = [];
 let treatSpeed = 3;
-let maxTreatSpeed = 4;  // Maximum fall speed
+let maxTreatSpeed = 8;  // Maximum fall speed
 let score = 0;
 let gameOver = false;
 let treatSpawnRate = 100; // Lower = More treats, Higher = Fewer treats
@@ -26,8 +30,11 @@ let treatSpawnCounter = 0; // Counts frames for treat spawn control
 let showHat = false; // Track whether to show the hat
 let showBow = false; // Track whether to show the bow
 
-// Load high score from localStorage (or default to 0)
-let highScore = localStorage.getItem('sammieHighScore') || 0;
+// Load leaderboard from localStorage
+let leaderboard = JSON.parse(localStorage.getItem('sammieLeaderboard')) || {};
+
+// Load current player's high score
+let playerHighScore = leaderboard[playerName] || 0;
 
 // Handle keyboard input
 const keys = {};
@@ -48,20 +55,6 @@ rightBtn.addEventListener("touchend", () => keys["ArrowRight"] = false);
 document.addEventListener("touchmove", function(event) {
     event.preventDefault();
 }, { passive: false });
-
-// Track image loading
-let imagesLoaded = 0;
-const images = [catImg, treatImg, hatImg, bowImg];
-
-// Wait until all images are loaded
-images.forEach((img) => {
-    img.onload = () => {
-        imagesLoaded++;
-        if (imagesLoaded === images.length) {
-            gameLoop();
-        }
-    };
-});
 
 // Treat object
 class Treat {
@@ -115,19 +108,20 @@ function update() {
             treatSpeed = Math.min(3 + Math.floor(score / 5), maxTreatSpeed); // Capped speed
             treatSpawnRate = Math.max(50, 100 - score * 2); // Treats spawn faster, but not too fast
 
-            // Update high score if needed
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('sammieHighScore', highScore);
+            // Update current player's high score
+            if (score > playerHighScore) {
+                playerHighScore = score;
+                leaderboard[playerName] = playerHighScore;
+                localStorage.setItem('sammieLeaderboard', JSON.stringify(leaderboard));
             }
 
             // Show hat after 10 treats
-            if (score >= 10 && !showHat) {
+            if (score >= 10) {
                 showHat = true;
             }
 
             // Show bow after 25 treats
-            if (score >= 25 && !showBow) {
+            if (score >= 25) {
                 showBow = true;
             }
         }
@@ -162,21 +156,31 @@ function draw() {
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
     ctx.fillText(`Sammie has eaten: ${score} treats`, 20, 30);
+    ctx.fillText(`High Score (${playerName}): ${playerHighScore}`, 20, 60);
 
-    // Draw high score
-    ctx.fillStyle = "darkgreen";
-    ctx.font = "20px Arial";
-    ctx.fillText(`High Score: ${highScore}`, canvas.width - 200, 30);
+    // Draw leaderboard
+    drawLeaderboard();
+}
+
+// Draw leaderboard
+function drawLeaderboard() {
+    const sortedScores = Object.entries(leaderboard)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+    ctx.fillStyle = "darkblue";
+    ctx.font = "18px Arial";
+    ctx.fillText(`🏆 Leaderboard 🏆`, canvas.width - 200, 30);
+
+    let yOffset = 60;
+    sortedScores.forEach(([name, highScore], index) => {
+        ctx.fillText(`${index + 1}. ${name}: ${highScore}`, canvas.width - 200, yOffset);
+        yOffset += 30;
+    });
 }
 
 // Game over screen
 function showGameOverScreen() {
-    // Check and update high score if needed
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('sammieHighScore', highScore);
-    }
-
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -185,7 +189,7 @@ function showGameOverScreen() {
     ctx.fillText("Game Over!", canvas.width / 2 - 80, canvas.height / 2 - 30);
     ctx.font = "20px Arial";
     ctx.fillText(`Sammie ate ${score} treats!`, canvas.width / 2 - 90, canvas.height / 2);
-    ctx.fillText(`High Score: ${highScore}`, canvas.width / 2 - 90, canvas.height / 2 + 30);
+    ctx.fillText(`High Score (${playerName}): ${playerHighScore}`, canvas.width / 2 - 90, canvas.height / 2 + 30);
     
     setTimeout(() => document.location.reload(), 2000); // Auto-restart after 2 seconds
 }
@@ -196,3 +200,9 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
+
+// Start game after images load
+window.onload = () => {
+    gameLoop();
+};
+
