@@ -8,7 +8,7 @@ canvas.height = 600;
 const catImg = new Image();
 catImg.src = "cat.jpg";  // Ensure you have this file
 const treatImg = new Image();
-treatImg.src = "treat.jpg";  // Ensure you have this file
+treatImg.src = "treat.JPG";  // Ensure you have this file
 
 // Game variables
 const cat = { x: canvas.width / 2 - 50, y: canvas.height - 80, width: 100, height: 80, speed: 10 };
