@@ -10,9 +10,9 @@ catImg.src = "cat.jpg";  // Ensure you have this file
 const treatImg = new Image();
 treatImg.src = "treat.jpg";  // Ensure you have this file
 const hatImg = new Image();
-hatImg.src = "hat.png";  // Add your hat image here
+hatImg.src = "hat.jpg";  // Add your hat image here
 const bowImg = new Image();
-bowImg.src = "bow.png";  // Add your bow image here
+bowImg.src = "bow.jpg";  // Add your bow image here
 
 // Get player name
 let playerName = prompt("Enter your name:");
