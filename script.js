@@ -196,6 +196,3 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
-
-// Start game
-gameLoop();
