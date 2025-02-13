@@ -14,6 +14,11 @@ hatImg.src = "hat.jpg";  // Add your hat image here
 const bowImg = new Image();
 bowImg.src = "bow.jpg";  // Add your bow image here
 
+// JSONBin API Setup
+const binId = "67ae3f5ce41b4d34e48caea7";
+const apiKey = "$2a$10$wrO6nVh76pu42GLeSBtn1OlxlHKOYYSSjIJE0KlRa/c1XerQOQjMa";
+const binUrl = `https://api.jsonbin.io/v3/b/${binId}`;
+
 // Get player name
 let playerName = prompt("Enter your name:");
 if (!playerName) playerName = "Guest";
@@ -29,12 +34,7 @@ let treatSpawnRate = 100; // Lower = More treats, Higher = Fewer treats
 let treatSpawnCounter = 0; // Counts frames for treat spawn control
 let showHat = false; // Track whether to show the hat
 let showBow = false; // Track whether to show the bow
-
-// Load leaderboard from localStorage
-let leaderboard = JSON.parse(localStorage.getItem('sammieLeaderboard')) || {};
-
-// Load current player's high score
-let playerHighScore = leaderboard[playerName] || 0;
+let leaderboard = [];
 
 // Handle keyboard input
 const keys = {};
@@ -77,6 +77,47 @@ class Treat {
     }
 }
 
+// Fetch leaderboard from JSONBin
+async function fetchLeaderboard() {
+    const response = await fetch(binUrl, {
+        headers: {
+            "X-Master-Key": apiKey,
+            "X-Master-Key": apiKey
+        }
+    });
+    const data = await response.json();
+    leaderboard = Array.isArray(data.record.leaderboard) ? data.record.leaderboard : [];
+}
+
+// Update leaderboard on JSONBin
+async function updateLeaderboard(name, score) {
+    const playerIndex = leaderboard.findIndex(player => player.name === name);
+    if (playerIndex !== -1) {
+        if (score > leaderboard[playerIndex].score) {
+            leaderboard[playerIndex].score = score;
+        }
+    } else {
+        leaderboard.push({ name, score });
+    }
+
+    leaderboard.sort((a, b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 10);
+
+    await fetch(binUrl, {
+        method: 'PUT',
+        headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": apiKey,
+            "X-Bin-Private": "false"
+        },
+        headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": apiKey
+        },
+        body: JSON.stringify({ leaderboard })
+    });
+}
+
 // Update game logic
 function update() {
     if (gameOver) {
@@ -84,46 +125,28 @@ function update() {
         return;
     }
 
-    // Move cat
     if (keys["ArrowLeft"] && cat.x > 0) cat.x -= cat.speed;
     if (keys["ArrowRight"] && cat.x < canvas.width - cat.width) cat.x += cat.speed;
 
-    // Treat spawning logic (Balanced!)
     treatSpawnCounter++;
     if (treatSpawnCounter > treatSpawnRate) {
         treats.push(new Treat());
-        treatSpawnCounter = 0; // Reset counter
+        treatSpawnCounter = 0;
     }
 
     treats.forEach((treat, index) => {
         treat.update();
 
-        // Check for collision
         if (cat.x < treat.x + treat.width && cat.x + cat.width > treat.x &&
             cat.y < treat.y + treat.height && cat.y + cat.height > treat.y) {
             treats.splice(index, 1);
             score++;
 
-            // Adjust difficulty gradually (keeps game winnable!)
-            treatSpeed = Math.min(3 + Math.floor(score / 5), maxTreatSpeed); // Capped speed
-            treatSpawnRate = Math.max(50, 100 - score * 2); // Treats spawn faster, but not too fast
+            treatSpeed = Math.min(3 + Math.floor(score / 5), maxTreatSpeed);
+            treatSpawnRate = Math.max(50, 100 - score * 2);
 
-            // Update current player's high score
-            if (score > playerHighScore) {
-                playerHighScore = score;
-                leaderboard[playerName] = playerHighScore;
-                localStorage.setItem('sammieLeaderboard', JSON.stringify(leaderboard));
-            }
-
-            // Show hat after 10 treats
-            if (score >= 10) {
-                showHat = true;
-            }
-
-            // Show bow after 25 treats
-            if (score >= 25) {
-                showBow = true;
-            }
+            if (score >= 10) showHat = true;
+            if (score >= 25) showBow = true;
         }
     });
 }
@@ -134,53 +157,38 @@ function draw() {
     ctx.drawImage(catImg, cat.x, cat.y, cat.width, cat.height);
     treats.forEach(treat => treat.draw());
 
-    // Draw hat if score >= 10
     if (showHat) {
-        const hatWidth = 60;
-        const hatHeight = 40;
-        const hatX = cat.x + 20; // Position hat on cat's head
-        const hatY = cat.y - 30; // Slightly above the cat's head
-        ctx.drawImage(hatImg, hatX, hatY, hatWidth, hatHeight);
+        ctx.drawImage(hatImg, cat.x + 20, cat.y - 30, 60, 40);
     }
 
-    // Draw bow if score >= 25
     if (showBow) {
-        const bowWidth = 60;
-        const bowHeight = 40;
-        const bowX = cat.x + 20; // Centered horizontally
-        const bowY = cat.y + 60; // Positioned just below Sammie's chin
-        ctx.drawImage(bowImg, bowX, bowY, bowWidth, bowHeight);
+        ctx.drawImage(bowImg, cat.x + 20, cat.y + 60, 60, 40);
     }
 
-    // Draw score
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
     ctx.fillText(`Sammie has eaten: ${score} treats`, 20, 30);
-    ctx.fillText(`High Score (${playerName}): ${playerHighScore}`, 20, 60);
 
-    // Draw leaderboard
     drawLeaderboard();
 }
 
 // Draw leaderboard
 function drawLeaderboard() {
-    const sortedScores = Object.entries(leaderboard)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
-
+    const sortedScores = leaderboard.slice(0, 3);
     ctx.fillStyle = "darkblue";
     ctx.font = "18px Arial";
     ctx.fillText(`🏆 Leaderboard 🏆`, canvas.width - 200, 30);
-
     let yOffset = 60;
-    sortedScores.forEach(([name, highScore], index) => {
-        ctx.fillText(`${index + 1}. ${name}: ${highScore}`, canvas.width - 200, yOffset);
+    sortedScores.forEach((entry, index) => {
+        ctx.fillText(`${index + 1}. ${entry.name}: ${entry.score}`, canvas.width - 200, yOffset);
         yOffset += 30;
     });
 }
 
 // Game over screen
 function showGameOverScreen() {
+    updateLeaderboard(playerName, score);
+
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -189,20 +197,20 @@ function showGameOverScreen() {
     ctx.fillText("Game Over!", canvas.width / 2 - 80, canvas.height / 2 - 30);
     ctx.font = "20px Arial";
     ctx.fillText(`Sammie ate ${score} treats!`, canvas.width / 2 - 90, canvas.height / 2);
-    ctx.fillText(`High Score (${playerName}): ${playerHighScore}`, canvas.width / 2 - 90, canvas.height / 2 + 30);
-    
-    setTimeout(() => document.location.reload(), 2000); // Auto-restart after 2 seconds
+    setTimeout(() => document.location.reload(), 2000);
 }
 
 // Game loop
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+async function gameLoop() {
+    await fetchLeaderboard();
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+    loop();
 }
 
-// Start game after images load
-window.onload = () => {
-    gameLoop();
-};
+gameLoop();
+
 
