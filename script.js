@@ -18,7 +18,7 @@ bowImg.src = "bow.jpg";  // Add your bow image here
 const cat = { x: canvas.width / 2 - 50, y: canvas.height - 80, width: 100, height: 80, speed: 10 };
 const treats = [];
 let treatSpeed = 3;
-let maxTreatSpeed = 8;  // Maximum fall speed
+let maxTreatSpeed = 4;  // Maximum fall speed
 let score = 0;
 let gameOver = false;
 let treatSpawnRate = 100; // Lower = More treats, Higher = Fewer treats
